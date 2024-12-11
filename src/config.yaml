@@ -1,0 +1,26 @@
+environments:
+  development:
+    db_host: "localhost"
+    jdbc_url: "jdbc:postgresql://localhost:5432/itversity_retail_db"
+    table_name: "orders"
+    username: "itversity_retail_user"
+    password: "itversity"
+    partition_column: "order_id"
+    lower_bound: "1"
+    upper_bound: "10000"
+    num_partitions: "8"
+    spark_master: "local[4]"
+    spark_jars: "jars/postgresql-42.7.4.jar"
+
+  test:
+    db_host: "test-db-host"
+    jdbc_url: "jdbc:postgresql://test-db-host:5432/test_retail_db"
+    table_name: "orders_test"
+    username: "test_user"
+    password: "test_password"
+    partition_column: "order_id"
+    lower_bound: "1"
+    upper_bound: "5000"
+    num_partitions: "4"
+    spark_master: "local[2]"
+    spark_jars: "jars/postgresql-42.7.4.jar"

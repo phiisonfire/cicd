@@ -1,38 +1,60 @@
 import os
-
+import yaml
 from pyspark.sql import SparkSession, DataFrame
-import pyspark.sql.functions as F
+
+
+def load_config(env: str, config_file: str = "conf/dev.yaml") -> dict:
+    with open(config_file, "r") as file:
+        config = yaml.safe_load(file)
+    return config["environments"][env]
+
 
 def read_sql_table(
-    spark: SparkSession,
-    db_host: str = "localhost",
-    jdbc_url: str = "jdbc:postgresql://localhost:5432/itversity_retail_db",
-    table_name: str = "orders",
-    username: str = "itversity_retail_user",
-    password: str = "itversity"
+        spark: SparkSession, 
+        config: dict,
+        table: str = "orders",
+        primary_key: str = "order_id",
+        columns: list = None  # Add a parameter for selecting specific columns
 ) -> DataFrame:
+    # Build the SQL query to select specific columns if provided
+    if columns:
+        column_list = ", ".join(columns)
+        table_query = f"(SELECT {column_list} FROM {table}) AS subquery"
+    else:
+        table_query = table  # Use the entire table if no columns are specified
+
     df = spark.read \
         .format("jdbc") \
-        .option("url", jdbc_url) \
-        .option("dbtable", table_name) \
-        .option("user", username) \
-        .option("password", password) \
+        .option("url", config["jdbc_url"]) \
+        .option("dbtable", table_query) \
+        .option("user", config["username"]) \
+        .option("password", config["password"]) \
         .option("driver", "org.postgresql.Driver") \
-        .option("partitionColumn", "order_id") \
-        .option("lowerBound", "1") \
-        .option("upperBound", "10000") \
-        .option("numPartitions", "8") \
+        .option("partitionColumn", primary_key) \
+        .option("lowerBound", config["lower_bound"]) \
+        .option("upperBound", config["upper_bound"]) \
+        .option("numPartitions", config["num_partitions"]) \
         .load()
     return df
-    
+
 
 if __name__ == "__main__":
+    # Set environment (e.g., development or test)
+    ENV = os.getenv("ENV", "development")
+
+    # Load configuration
+    config = load_config(ENV)
+
+    # Initialize Spark session
     spark = SparkSession.builder \
-                .appName("Extract") \
-                .master("local[4]") \
-                .config("spark.jars", "jars/postgresql-42.7.4.jar") \
-                .getOrCreate()
-    df = read_sql_table(spark)
+        .appName("Extract") \
+        .master(config["spark_master"]) \
+        .config("spark.jars", config["spark_jars"]) \
+        .getOrCreate()
+
+    # Read data
+    df = read_sql_table(spark, config)
     df.show(10)
+
+    # Stop Spark session
     spark.stop()
-    

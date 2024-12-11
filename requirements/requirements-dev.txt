@@ -1,2 +1,4 @@
 pyspark
 apache-airflow
+pytest
+apache-airflow-providers-apache-spark
