@@ -1,3 +1,13 @@
+import sys
+from pathlib import Path
+
+# Get the directory 2 levels up
+project_root = Path(__file__).resolve().parents[2]
+print(project_root)
+
+# Add it to sys.path
+sys.path.insert(0, str(project_root))
+
 from airflow import DAG
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from datetime import datetime, timedelta
@@ -22,7 +32,7 @@ with DAG(
     run_mart_sales_performance = SparkSubmitOperator(
         task_id="run_mart_sales_performance",
         application="src/pipelines/mart_sales_performance_by_customer.py",
-        conn_id="spark://spark-master:7077",  # Define this connection in Airflow
-        jars="/path/to/jars/postgresql-42.7.4.jar",
+        conn_id="spark_conn",  # Define this connection in Airflow
+        jars="jars/postgresql-42.7.4.jar",
         application_args=["--env", "production"],  # Example argument
     )
